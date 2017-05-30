@@ -1,0 +1,10 @@
+[package]
+
+name = "hello_world"
+version = "0.0.1"
+authors = ["Andrew Bikle"]
+
+build = "src/build.rs"
+
+[build-dependencies]
+bindgen = "^0.23"
