@@ -3,6 +3,7 @@ name = "hello_world"
 version = "0.0.1"
 dependencies = [
  "bindgen 0.23.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libc 0.2.23 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]

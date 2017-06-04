@@ -1,5 +1,7 @@
 [package]
 
+links = "Secur32.lib"
+
 name = "hello_world"
 version = "0.0.1"
 authors = ["Andrew Bikle"]
@@ -7,4 +9,5 @@ authors = ["Andrew Bikle"]
 build = "src/build.rs"
 
 [build-dependencies]
+libc = "^0.2.23"
 bindgen = "^0.23"
