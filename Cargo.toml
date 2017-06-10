@@ -8,6 +8,8 @@ authors = ["Andrew Bikle"]
 
 build = "src/build.rs"
 
+[dependencies]
+base64 = "0.5.2"
+
 [build-dependencies]
-libc = "^0.2.23"
 bindgen = "^0.23"
