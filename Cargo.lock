@@ -1,5 +1,5 @@
 [root]
-name = "hello_world"
+name = "node_sspi"
 version = "0.0.1"
 dependencies = [
  "base64 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)",

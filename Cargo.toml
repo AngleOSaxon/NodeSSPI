@@ -2,7 +2,7 @@
 
 links = "Secur32.lib"
 
-name = "hello_world"
+name = "node_sspi"
 version = "0.0.1"
 authors = ["Andrew Bikle"]
 
