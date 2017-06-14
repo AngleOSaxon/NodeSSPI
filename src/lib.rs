@@ -14,6 +14,30 @@ pub mod node_sspi {
 
     const max_message_size: usize = 12000;
 
+    const SEC_E_OK: i32 = 0;
+    const SEC_E_CERT_EXPIRED: i32 = -2146893016;
+    const SEC_E_INCOMPLETE_MESSAGE: i32 = -2146893032;
+    const SEC_E_INSUFFICIENT_MEMORY: i32 = -2146893056;
+    const SEC_E_INTERNAL_ERROR: i32 = -2146893052;
+    const SEC_E_INVALID_HANDLE: i32 = -2146893055;
+    const SEC_E_INVALID_TOKEN: i32 = -2146893048;
+    const SEC_E_LOGON_DENIED: i32 = -2146893044;
+    const SEC_E_NO_AUTHENTICATING_AUTHORITY: i32 = -2146893039;
+    const SEC_E_NO_CREDENTIALS: i32 = -2146893042;
+    const SEC_E_TARGET_UNKNOWN: i32 = -2146893053;
+    const SEC_E_UNSUPPORTED_FUNCTION: i32 = -2146893054;
+    const SEC_E_UNTRUSTED_ROOT: i32 = -2146893019;
+    const SEC_E_WRONG_PRINCIPAL: i32 = -2146893022;
+    const SEC_E_SECPKG_NOT_FOUND: i32 = -2146893051;
+    const SEC_E_QOP_NOT_SUPPORTED: i32 = -2146893046;
+    const SEC_E_UNKNOWN_CREDENTIALS: i32 = -2146893043;
+    const SEC_E_NOT_OWNER: i32 = -2146893050;
+    const SEC_I_RENEGOTIATE: i32 = 590625;
+    const SEC_I_COMPLETE_AND_CONTINUE: i32 = 590612;
+    const SEC_I_COMPLETE_NEEDED: i32 = 590611;
+    const SEC_I_CONTINUE_NEEDED: i32 = 590610;
+    const SEC_I_INCOMPLETE_CREDENTIALS: i32 = 590624;
+    
     pub struct SecurityContext {
         pub context_handle: _SecHandle,
         pub credentials_handle: _SecHandle,
@@ -151,7 +175,7 @@ pub mod node_sspi {
 
     unsafe fn check_result_code(result_code: i32, mut context_handle: _SecHandle, mut buffer_desc: _SecBufferDesc) {
         match result_code {
-                590612 | 590611 => {
+                SEC_I_COMPLETE_NEEDED | SEC_I_COMPLETE_AND_CONTINUE => {
                     if CompleteAuthToken(&mut context_handle, &mut buffer_desc) > 0 {
                         println!("Success completing auth token!");
                     }
@@ -159,7 +183,7 @@ pub mod node_sspi {
                         println!("Failed to complete token!");
                     }
                 },
-                val if (val >= 0) => println!("Success initializing token!"),
+                val if (val >= SEC_E_OK) => println!("Success initializing token!"),
                 val => println!("Unknown result: {}", val)
             }
     }
