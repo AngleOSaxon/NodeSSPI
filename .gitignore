@@ -1,4 +1,4 @@
 *.exe
 *.pdb
-target/debug/*
+native/target/debug/*
 .vscode/*

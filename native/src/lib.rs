@@ -9,8 +9,8 @@ pub mod node_sspi {
     use std::ffi::CString;
     use std::os::raw::c_void;
 
-    //include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
-    include!("../bindings.rs");
+    include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
+    //include!("../bindings.rs");
 
     const max_message_size: usize = 12000;
 
