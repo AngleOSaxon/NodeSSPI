@@ -2,6 +2,8 @@
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 #![allow(dead_code)]
+#[macro_use]
+extern crate neon;
 
 #[link(name = "Secur32")]
 pub mod node_sspi {
@@ -9,8 +11,11 @@ pub mod node_sspi {
     use std::ffi::CString;
     use std::os::raw::c_void;
 
-    include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
-    //include!("../bindings.rs");
+    use neon::vm::{Call, JsResult};
+    use neon::js::JsString;
+
+    //include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
+    include!("../bindings.rs");
 
     const max_message_size: usize = 12000;
 
@@ -187,4 +192,14 @@ pub mod node_sspi {
                 val => println!("Unknown result: {}", val)
             }
     }
+
+    pub fn hello(call: Call) -> JsResult<JsString> {
+        let scope = call.scope;
+        Ok(JsString::new(scope, "hello from rust").unwrap())
+    }
+
+
+    register_module!(m, {
+        m.export("hello", hello)
+    });
 }

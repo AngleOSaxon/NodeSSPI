@@ -1,5 +1,4 @@
 [package]
-
 links = "Secur32.lib"
 
 name = "node_sspi"
@@ -8,8 +7,14 @@ authors = ["Andrew Bikle"]
 
 build = "src/build.rs"
 
+[lib]
+name = "node_sspi"
+crate-type = ["dylib"]
+
 [dependencies]
 base64 = "0.5.2"
+neon = "0.1.18"
 
 [build-dependencies]
 bindgen = "^0.23"
+neon-build = "0.1.18"
