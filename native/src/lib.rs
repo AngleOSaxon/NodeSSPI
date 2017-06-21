@@ -4,15 +4,21 @@
 #![allow(dead_code)]
 #[macro_use]
 extern crate neon;
+extern crate base64;
 
 #[link(name = "Secur32")]
 pub mod node_sspi {
     use std::ptr;
     use std::ffi::CString;
     use std::os::raw::c_void;
+    use std::ops::Deref;
 
     use neon::vm::{Call, JsResult};
-    use neon::js::JsString;
+    use neon::js::{JsString, JsObject, JsNumber, Key, Object};
+    use neon::mem::Handle;
+    use neon::scope::RootScope;
+
+    use base64::{encode, decode};
 
     //include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
     include!("../bindings.rs");
@@ -47,6 +53,36 @@ pub mod node_sspi {
         pub context_handle: _SecHandle,
         pub credentials_handle: _SecHandle,
         pub token: Vec<u8>
+    }
+
+    pub trait JavascriptConvert {
+        fn get_js_object<'a>(&self, scope: &'a mut RootScope) -> Handle<'a, JsObject>;
+    }
+
+    impl JavascriptConvert for _SecHandle {
+        fn get_js_object<'a>(&self, scope: &'a mut RootScope) -> Handle<'a, JsObject> {
+            let cred_handle: Handle<JsObject> = JsObject::new(scope);
+            let cred_obj = cred_handle.deref();
+
+            cred_obj.set("dwUpper", JsNumber::new(scope, self.dwUpper as f64));
+            cred_obj.set("dwLower", JsNumber::new(scope, self.dwLower as f64));
+
+            cred_handle
+        }
+    } 
+    
+    impl JavascriptConvert for SecurityContext {
+        fn get_js_object<'a>(&self, scope: &'a mut RootScope) -> Handle<'a, JsObject> {
+            let encoded_token = encode(&self.token);
+            
+            let context_handle = JsObject::new(scope);
+            let context_obj = context_handle.deref();
+            context_obj.set("token", JsString::new(scope, encoded_token.as_ref()).unwrap());
+            context_obj.set("contextHandle", self.context_handle.get_js_object(scope));
+            context_obj.set("credentialsHandle", self.credentials_handle.get_js_object(scope));
+            
+            context_handle
+        }
     }
 
     fn create_expiry() -> LARGE_INTEGER {
@@ -84,7 +120,7 @@ pub mod node_sspi {
         cred_handle
     }
 
-    pub fn initialize_security_context(auth_type: String, auth_spn: String) -> SecurityContext {
+    pub fn initialize_security_context_internal(auth_type: String, auth_spn: String) -> SecurityContext {
         let mut output_buffer_vec: Vec<u8>  = Vec::with_capacity(max_message_size);
 
         let mut context_handle = _SecHandle {
@@ -133,7 +169,7 @@ pub mod node_sspi {
         }
     }
 
-    pub fn initialize_security_context_with_input(auth_spn: String, mut context: SecurityContext) -> SecurityContext {
+    pub fn initialize_security_context_with_input_internal(auth_spn: String, mut context: SecurityContext) -> SecurityContext {
         let mut output_buffer_vec: Vec<u8>  = Vec::with_capacity(max_message_size);
         let auth_spn_cstr = CString::new(auth_spn.into_bytes()).unwrap();
 
@@ -189,17 +225,39 @@ pub mod node_sspi {
                     }
                 },
                 val if (val >= SEC_E_OK) => println!("Success initializing token!"),
-                val => println!("Unknown result: {}", val)
+                val => println!("Error code {}", val)
             }
     }
 
     pub fn hello(call: Call) -> JsResult<JsString> {
         let scope = call.scope;
-        Ok(JsString::new(scope, "hello from rust").unwrap())
+        let string: Handle<JsString> = try!(try!(call.arguments.require(scope, 0)).check::<JsString>());
+        let rust_str = string.value();
+        Ok(JsString::new(scope, &(rust_str + " (added in rust)")[..]).unwrap())
     }
+
+    pub fn initialize_security_context(call: Call) -> JsResult<JsObject> {
+        // let scope = call.scope;
+        let auth_type = try!(try!(call.arguments.require(call.scope, 0)).check::<JsString>()).value().to_string();
+        let auth_spn = try!(try!(call.arguments.require(call.scope, 1)).check::<JsString>()).value().to_string();
+        let context = initialize_security_context_internal(auth_type, auth_spn);
+
+        let context_obj = context.get_js_object(call.scope);
+
+        Ok(context_obj)
+    }
+
+    // pub fn initialize_security_context_with_input(call: Call) -> JsResult<JsObject> {
+    //     let auth_spn = try!(try!(call.arguments.require(call.scope, 0)).check::<JsString>()).value().to_string();
+    //     let security_context = try!(try!(call.arguments.require(call.scope, 1)).check::<JsObject>()).value().to_string();
+
+    // }
 
 
     register_module!(m, {
-        m.export("hello", hello)
+        m.export("hello", hello);
+        m.export("initializeSecurityContext", initialize_security_context);
+
+        Ok(())
     });
 }
