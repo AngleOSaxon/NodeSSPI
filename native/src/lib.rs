@@ -203,51 +203,6 @@ pub mod node_sspi {
         }
     }
 
-    pub fn initialize_security_context_with_input(auth_spn: String, mut context: SecurityContext) -> SecurityContext {
-        let mut output_buffer_vec: Vec<u8>  = Vec::with_capacity(max_message_size);
-        let auth_spn_cstr = CString::new(auth_spn.into_bytes()).unwrap();
-
-        unsafe {
-            let auth_spn_ptr = auth_spn_cstr.into_raw();
-            let message_attribute: u32 = 2048; // ISC_REQ_CONNECTION -- default value; security context will not format messages
-            let data_representation: u32 = 0x00000010; // SECURITY_NATIVE_DREP
-            let mut context_attributes: u32 = 0;
-
-            let mut input_buffer = _SecBuffer {
-                cbBuffer: max_message_size as u32,
-                BufferType: 2, // SECBUFFER_TOKEN
-                pvBuffer: context.token.as_mut_ptr() as *mut c_void
-            };
-            let mut input_buffer_desc = _SecBufferDesc {
-                ulVersion: 0,
-                cBuffers: 1,
-                pBuffers: &mut input_buffer
-            };
-
-            let mut output_buffer = _SecBuffer {
-                cbBuffer: max_message_size as u32,
-                BufferType: 2, // SECBUFFER_TOKEN
-                pvBuffer: output_buffer_vec.as_mut_ptr() as *mut c_void
-            };
-            let mut output_buffer_desc = _SecBufferDesc {
-                ulVersion: 0,
-                cBuffers: 1,
-                pBuffers: &mut output_buffer
-            };
-
-            let init_result = InitializeSecurityContextA(&mut context.credentials_handle, &mut context.context_handle, auth_spn_ptr, message_attribute, 0, data_representation, 
-                &mut input_buffer_desc, 0, &mut context.context_handle, &mut output_buffer_desc, &mut context_attributes, &mut create_expiry());
-            check_result_code(init_result, context.context_handle, output_buffer_desc);
-
-            output_buffer_vec.set_len(output_buffer.cbBuffer as usize);
-        }
-        SecurityContext {
-            context_handle: context.context_handle,
-            token: output_buffer_vec,
-            credentials_handle: context.credentials_handle
-        }
-    }
-
     unsafe fn check_result_code(result_code: i32, mut context_handle: _SecHandle, mut buffer_desc: _SecBufferDesc) {
         match result_code {
                 SEC_I_COMPLETE_NEEDED | SEC_I_COMPLETE_AND_CONTINUE => {
@@ -263,13 +218,6 @@ pub mod node_sspi {
             }
     }
 
-    pub fn hello(call: Call) -> JsResult<JsString> {
-        let scope = call.scope;
-        let string: Handle<JsString> = try!(try!(call.arguments.require(scope, 0)).check::<JsString>());
-        let rust_str = string.value();
-        Ok(JsString::new(scope, &(rust_str + " (added in rust)")[..]).unwrap())
-    }
-
     pub fn initialize_security_context_javascript(call: Call) -> JsResult<JsObject> {
         let auth_type = try!(try!(call.arguments.require(call.scope, 0)).check::<JsString>()).value().to_string();
         let auth_spn = try!(try!(call.arguments.require(call.scope, 1)).check::<JsString>()).value().to_string();
@@ -280,25 +228,9 @@ pub mod node_sspi {
         Ok(context_obj)
     }
 
-    pub fn initialize_security_context_with_input_javascript(call: Call) -> JsResult<JsObject> {
-        let auth_spn = try!(try!(call.arguments.require(call.scope, 0)).check::<JsString>()).value().to_string();
-        let context_obj = try!(try!(call.arguments.require(call.scope, 1)).check::<JsObject>());
-
-        let context = match SecurityContext::get_rust_object(context_obj, call.scope) {
-            Ok(expr) => expr,
-            Err(expr) => return Err(expr)
-        };
-
-        let initialized_context = initialize_security_context_with_input(auth_spn, context);
-
-        Ok(initialized_context.get_js_object(call.scope))
-    }
-
 
     register_module!(m, {
-        m.export("hello", hello);
         m.export("initializeSecurityContext", initialize_security_context_javascript);
-        m.export("initializeSecurityContextWithInput", initialize_security_context_with_input_javascript);
 
         Ok(())
     });
