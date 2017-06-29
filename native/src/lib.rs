@@ -15,7 +15,7 @@ pub mod node_sspi {
     use std::result::Result;
 
     use neon::vm::{Call, JsResult, Throw};
-    use neon::js::{JsString, JsObject, JsNumber, Key, Object};
+    use neon::js::{JsString, JsObject, JsNumber, JsUndefined, Object};
     use neon::mem::Handle;
     use neon::scope::RootScope;
 
@@ -203,6 +203,13 @@ pub mod node_sspi {
         }
     }
 
+    pub fn cleanup(context: &mut SecurityContext) {
+        unsafe {
+            FreeCredentialsHandle(&mut context.credentials_handle);
+            DeleteSecurityContext(&mut context.context_handle);
+        }
+    }
+
     unsafe fn check_result_code(result_code: i32, mut context_handle: _SecHandle, mut buffer_desc: _SecBufferDesc) {
         match result_code {
                 SEC_I_COMPLETE_NEEDED | SEC_I_COMPLETE_AND_CONTINUE => {
@@ -228,9 +235,22 @@ pub mod node_sspi {
         Ok(context_obj)
     }
 
+    pub fn cleanup_javascript(call: Call) -> JsResult<JsUndefined> {
+        let context_obj = try!(try!(call.arguments.require(call.scope, 0)).check::<JsObject>());
+
+        let mut context = match SecurityContext::get_rust_object(context_obj, call.scope) {
+            Ok(expr) => expr,
+            Err(expr) => return Err(expr)
+        };
+
+        cleanup(&mut context);
+
+        Ok(JsUndefined::new())
+    }
 
     register_module!(m, {
         m.export("initializeSecurityContext", initialize_security_context_javascript);
+        m.export("cleanup", cleanup_javascript);
 
         Ok(())
     });

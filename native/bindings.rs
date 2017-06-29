@@ -234,7 +234,6 @@ pub type SEC_GET_KEY_FN =
                                                Key:
                                                    *mut *mut ::std::os::raw::c_void,
                                                Status: *mut SECURITY_STATUS)>;
-#[link(name = "Secur32")]
 extern "C" {
     pub fn AcquireCredentialsHandleW(pszPrincipal: LPWSTR, pszPackage: LPWSTR,
                                      fCredentialUse: ::std::os::raw::c_ulong,
@@ -247,7 +246,6 @@ extern "C" {
                                      ptsExpiry: PTimeStamp)
      -> SECURITY_STATUS;
 }
-#[link(name = "Secur32")]
 extern "C" {
     pub fn AcquireCredentialsHandleA(pszPrincipal: LPSTR, pszPackage: LPSTR,
                                      fCredentialUse: ::std::os::raw::c_ulong,
@@ -258,6 +256,10 @@ extern "C" {
                                          *mut ::std::os::raw::c_void,
                                      phCredential: PCredHandle,
                                      ptsExpiry: PTimeStamp)
+     -> SECURITY_STATUS;
+}
+extern "C" {
+    pub fn FreeCredentialsHandle(phCredential: PCredHandle)
      -> SECURITY_STATUS;
 }
 extern "C" {
@@ -295,6 +297,9 @@ extern "C" {
 extern "C" {
     pub fn CompleteAuthToken(phContext: PCtxtHandle, pToken: PSecBufferDesc)
      -> SECURITY_STATUS;
+}
+extern "C" {
+    pub fn DeleteSecurityContext(phContext: PCtxtHandle) -> SECURITY_STATUS;
 }
 extern "C" {
     pub fn SaslInitializeSecurityContextW(phCredential: PCredHandle,
